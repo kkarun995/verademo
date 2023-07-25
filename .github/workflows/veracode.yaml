@@ -1,14 +1,14 @@
-name: Veracode SCA
+# name: Veracode SCA
 
-on: 
-  push:
-  workflow_dispatch:
+# on: 
+#   push:
+#   workflow_dispatch:
     
     
-jobs:
-  veracode-sca-task:
-    runs-on: ubuntu-latest
-    name: Scan remote repository for Issues
+# jobs:
+#   veracode-sca-task:
+#     runs-on: ubuntu-latest
+#     name: Scan remote repository for Issues
 
     steps:
       - name: Checkout
