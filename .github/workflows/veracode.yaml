@@ -1,0 +1,34 @@
+name: Veracode SCA
+
+on: 
+  push:
+  workflow_dispatch:
+    
+    
+jobs:
+  veracode-sca-task:
+    runs-on: ubuntu-latest
+    name: Scan remote repository for Issues
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build Image
+        uses: docker/build-push-action@v4
+        with:
+          push: false
+          tags: app:latest
+      - name: docker ls
+        run: |
+          docker images 
+      - name: Verracode Container/IaC/Secrets action step
+        uses: veracode/container_iac_secrets_scanning@v1.0.0
+        with:
+          vid: ${{ secrets.VID }}
+          vkey: ${{ secrets.VKEY }}
+          command: "scan" 
+          type: "directory"
+          source: "./"
+          format: "json"
+          debug: false
+          fail_build: false
