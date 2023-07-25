@@ -1,0 +1,44 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+# This workflow will initiate a Veracode Static Analysis Pipeline scan, return a results.json and convert to SARIF for upload as a code scanning alert
+
+name: Veracode Static Analysis Pipeline Scan
+
+on:
+  push:
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+permissions:
+  contents: read
+
+jobs:
+  veracode-sca-task:
+    runs-on: ubuntu-latest
+    name: Scan remote repository for Issues
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build Image
+        uses: docker/build-push-action@v4
+        with:
+          push: false
+          tags: app:latest
+      - name: docker ls
+        run: |
+          docker images 
+      - name: Verracode Container/IaC/Secrets action step
+        uses: veracode/container_iac_secrets_scanning@v1.0.0
+        with:
+          vid: ${{ secrets.VID }}
+          vkey: ${{ secrets.VKEY }}
+          command: "scan" 
+          type: "directory"
+          source: "./"
+          format: "json"
+          debug: false
+          fail_build: false         
