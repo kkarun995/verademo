@@ -1,19 +1,8 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-# This workflow will initiate a Veracode Static Analysis Pipeline scan, return a results.json and convert to SARIF for upload as a code scanning alert
-
-name: Veracode Static Analysis Pipeline Scan
+name: Veracode SCA
 
 on:
   push:
   workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
-permissions:
-  contents: read
 
 jobs:
   veracode-sca-task:
@@ -23,22 +12,35 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
       - name: Build Image
         uses: docker/build-push-action@v4
         with:
           push: false
           tags: app:latest
-      - name: docker ls
-        run: |
-          docker images 
-      - name: Verracode Container/IaC/Secrets action step
-        uses: veracode/container_iac_secrets_scanning@v1.0.0
+
+      - name: Docker Images List
+        run: docker images
+
+      # Download the Veracode Static Analysis Pipeline scan jar
+      - run: curl --silent --show-error --fail -O https://downloads.veracode.com/securityscan/pipeline-scan-LATEST.zip
+      - run: unzip -o pipeline-scan-LATEST.zip
+
+      # Run Veracode Static Analysis Pipeline scan
+      - uses: actions/setup-java@v3
         with:
-          vid: ${{ secrets.VID }}
-          vkey: ${{ secrets.VKEY }}
-          command: "scan" 
-          type: "directory"
-          source: "./"
-          format: "json"
-          debug: false
-          fail_build: false         
+          java-version: 8
+          distribution: 'temurin'
+      - run: java -jar pipeline-scan.jar --veracode_api_id "${{secrets.VID}}" --veracode_api_key "${{secrets.VKEY}}" --file ./
+
+      # Convert pipeline scan output to SARIF format
+      - name: Convert pipeline scan output to SARIF format
+        id: convert
+        uses: veracode/veracode-pipeline-scan-results-to-sarif@ff08ae5b45d5384cb4679932f184c013d34da9be
+        with:
+          pipeline-results-json: results.json
+
+      # Upload SARIF file for code scanning alerts
+      - uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: veracode-results.sarif
